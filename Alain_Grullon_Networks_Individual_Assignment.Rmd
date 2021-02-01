@@ -1,0 +1,166 @@
+---
+title: "Assignment"
+output: html_notebook
+---
+
+
+On this first assignment, applying the basic functions of the Igraph package is required. The following datasets are going to be used:
+
+* Actors dataset - undirected graph - : For the 2005 Graph Drawing conference a data set was provided of the IMDB movie database. We will use a reduced version of this dataset, which derived all actor-actor collaboration edges where the actors co-starred in at least 2 movies together between 1995 and 2004. 
+
+
+You have to complete the code chunks in this document but also analyze the results, extract insights and answer the short questions. Fill the CSV attached with your answers, sometimes just the number is enough, some others just a small sentence. Remember to change the header with your email.
+
+In your submission please upload both the R Markdown and the CSV with the solutions.
+
+
+# Loading data
+
+In this section, the goal is loading the datasets given, building the graph and analyzing basics metrics. Include the edge or node attributes you consider.
+
+Describe the values provided by summary function on the graph object.
+*1) How many nodes are there?* 
+
+```{r}
+library('igraph')
+nodes = read.csv("imdb_actors_key.csv", header = TRUE)
+edges = read.csv("imdb_actor_edges.csv", header = TRUE)
+
+g <- graph_from_data_frame(d=edges, directed=T, vertices=nodes)
+V(g)
+plot(g, edge.arrow.size=.4,vertex.label=NA)
+```
+
+
+1) *17577 nodes*
+```{r}
+E(g)
+```
+2) *287074 edges*
+
+# Degree distribution
+
+Analyse the degree distribution. Compute the total degree distribution.
+*3) How does this distributions look like?*
+
+```{r}
+deg <- degree(g, mode="total")
+bins <- seq(0, 800, by=50)
+hist(deg,
+     breaks = bins, 
+     xlim = c(0,800) ,
+     ylim = c(0,18000),
+     main = "Hist of nodes degree for IMDB Actors graph",
+     xlab = "k",
+     col = "orange")
+```
+
+3) The degree distribution is very skewed to the left, since over 80% of the actors in this huge data set have made less than 50 movies with other actors in the data set. Around 2000 actors have made more than 50 but less than 100 movies with other actors. 
+
+*4) What is the maximum degree?*
+```{r}
+max(degree(g))
+```
+*5) What is the minimum degree?*
+```{r}
+min(degree(g))
+```
+
+# Network Diameter and Average Path Length
+*6) What is the diameter of the graph?*
+
+```{r}
+diameter(g,directed=T)
+```
+
+*7) What is the avg path length of the graph?*
+```{r}
+mean_distance(g,directed=F)
+```
+# Node importance: Centrality measures
+
+Obtain the distribution of the number of movies made by an actor and the number of genres in which an actor starred in. It may be useful to analyze and discuss the results to be obtained in the following exercises.
+
+Number of movies made by an actor
+```{r} 
+library(data.table)
+no_movies <- nodes[,'movies_95_04']
+hist(no_movies, breaks='Scott', xlim=(0,100))
+```
+Number of genres starred by an actor
+```{r}
+genres <- lengths(strsplit(nodes$genres, split = ','))
+hist(genres, breaks='Scott')
+```
+
+Obtain three vectors with the degree, betweeness and closeness for each vertex of the actors' graph.
+
+```{r}
+degree = degree(g)
+betweeness = betweenness(g)
+closeness = closeness(g)
+```
+
+
+Obtain the list of the 20 actors with the largest degree centrality. It can be useful to show a list with the degree, the name of the actor, the number of movies, the main genre, and the number of genres in which the actor has participated.
+
+```{r}
+degree_df = data.frame(no_movies, nodes$main_genre, genres, degree)
+```
+
+*8) Who is the actor with highest degree centrality?*
+```{r}
+degree_top20 <- degree_df[order(-degree_df$degree),]
+head(degree_top20, 20)
+```
+Mark Davis
+
+*9) How do you explain the high degree of the top-20 list??*
+The high degree centrality or amount of direct connections seems to be explained almost exclusively by the number of movies the actor has acted in, with the exception of the famous Tom Hanks, who acts in a large array of different genres and is a world-class actor. It is also worth mentioning that the only non-adult film actor in this top-20 list is Tom Hanks, giving us an insight about the interconnected nature of adult film industry. 
+
+
+Obtain the list of the 20 actors with the largest betweenness centrality. Show a list with the betweenness, the name of the actor, the number of movies, the main genre, and the number of genres in which the actor has participated.
+
+```{r}
+betweeness_df = data.frame(no_movies, nodes$main_genre, genres, betweeness)
+```
+
+*10) Who is the actor with highest betweenes?*
+```{r}
+betweeness_top20 = betweeness_df[order(-betweeness_df$betweeness),]
+head(betweeness_top20, 20)
+```
+Ron Jeremy
+
+*11) How do you explain the high betweenness of the top-20 list?*
+The high betweenness seems to be explained also by a combination of the amount of movies and amount of genres an actor has. This centrality metric shows how an actor is able to connect different parts of a network and therefore the amount of genres the actor stars in will very much affect the betweenness centrality of the actor.
+
+
+Obtain the list of the 20 actors with the largest closeness centrality. Show a list with the closeness the name of the actor, the number of movies, the main genre, and the number of genres in which the actor has participated.
+
+```{r}
+closeness_df = data.frame(no_movies, nodes$main_genre, genres, closeness)
+```
+
+*12) Who is the actor with highest closeness centrality?*
+```{r}
+closeness_top20 = closeness_df[order(-closeness_df$closeness),]
+head(closeness_top20, 20)
+```
+Cameron Diaz
+
+*13) How do you explain the high closeness of the top-20 list? *
+High closeness defines a measure of centrality that shows how easily an actor can interact or have access to the rest of actors. It is clear by this list that the higher the number of movies and genres the higher the closeness centrality of the actor, with more weight on the genres.
+
+
+# Network Models (Optional)
+Explore the Erdös-Renyi model and compare its structural properties to those of real-world networks (actors):
+
+* Degree distribution  P(k)
+* Network Diameter and Average Path Length
+* (Global and Local) Clustering Coefficient
+
+
+# Comunity detection (Optional)
+Use any community detection algorithm for the actors' network and discuss whether the communities found make sense according to the vertex labels.
+
